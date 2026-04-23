@@ -1,85 +1,25 @@
 import pandas as pd
-from pyspark.sql import DataFrame as SparkDataFrame
+import re
 
-
-def _is_true(x: pd.Series) -> pd.Series:
-    return x == "t"
-
-
-def _parse_percentage(x: pd.Series) -> pd.Series:
-    x = x.str.replace("%", "")
-    x = x.astype(float) / 100
-    return x
-
-
-def _parse_money(x: pd.Series) -> pd.Series:
-    x = x.str.replace("$", "").str.replace(",", "")
-    x = x.astype(float)
-    return x
-
-
-def preprocess_companies(companies: pd.DataFrame) -> pd.DataFrame:
-    """Preprocesses the data for companies.
-
-    Args:
-        companies: Raw data.
-    Returns:
-        Preprocessed data, with `company_rating` converted to a float and
-        `iata_approved` converted to boolean.
+def preprocess_financial_news(df: pd.DataFrame) -> pd.DataFrame:
     """
-    companies["iata_approved"] = _is_true(companies["iata_approved"])
-    companies["company_rating"] = _parse_percentage(companies["company_rating"])
-    return companies
-
-
-def preprocess_shuttles(shuttles: pd.DataFrame) -> pd.DataFrame:
-    """Preprocesses the data for shuttles.
-
-    Args:
-        shuttles: Raw data.
-    Returns:
-        Preprocessed data, with `price` converted to a float and `d_check_complete`,
-        `moon_clearance_complete` converted to boolean.
+    Cleans the raw financial news data and formats it for modeling.
     """
-    shuttles["d_check_complete"] = _is_true(shuttles["d_check_complete"])
-    shuttles["moon_clearance_complete"] = _is_true(shuttles["moon_clearance_complete"])
-    shuttles["price"] = _parse_money(shuttles["price"])
-    return shuttles
+    # 1. Keep only the columns we care about
+    df = df[['sentence', 'answer']].copy()
+    df = df.rename(columns={'answer': 'sentiment_label'})
+    
+    # 2. Clean the text: lowercase and remove special characters
+    def clean_text(text):
+        text = str(text).lower()
+        # Remove punctuation but keep alphanumeric and spaces
+        text = re.sub(r'[^\w\s]', '', text) 
+        return text
 
-
-def preprocess_reviews(reviews: pd.DataFrame) -> pd.DataFrame:
-    # Drop columns that aren't used for model training
-    cols_to_drop = [
-        'review_scores_comfort',
-        'review_scores_amenities',
-        'review_scores_trip',
-        'review_scores_crew',
-        'review_scores_location',
-        'review_scores_price',
-        'number_of_reviews',
-        'reviews_per_month',
-    ]
-    return reviews.drop(columns=cols_to_drop, errors="ignore")
-
-
-def create_model_input_table(
-    shuttles: SparkDataFrame, companies: SparkDataFrame, reviews: SparkDataFrame
-) -> SparkDataFrame:
-    """Combines all data to create a model input table.
-
-    Args:
-        shuttles: Preprocessed data for shuttles.
-        companies: Preprocessed data for companies.
-        reviews: Raw data for reviews.
-    Returns:
-        Model input table.
-
-    """
-    # Rename columns to prevent duplicates
-    shuttles = shuttles.withColumnRenamed("id", "shuttle_id")
-    companies = companies.withColumnRenamed("id", "company_id")
-
-    rated_shuttles = shuttles.join(reviews, "shuttle_id", how="left")
-    model_input_table = rated_shuttles.join(companies, "company_id", how="left")
-    model_input_table = model_input_table.dropna()
-    return model_input_table
+    df["cleaned_sentence"] = df["sentence"].apply(clean_text)
+    
+    # 3. Drop any empty rows
+    df = df.dropna(subset=['cleaned_sentence', 'sentiment_label'])
+    
+    # Reorder columns for clarity
+    return df[['sentiment_label', 'sentence', 'cleaned_sentence']]
