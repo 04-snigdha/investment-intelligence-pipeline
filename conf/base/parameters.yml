@@ -1,0 +1,5 @@
+# Model Parameters
+model_options:
+  test_size: 0.2
+  random_state: 42
+  tfidf_max_features: 1000
