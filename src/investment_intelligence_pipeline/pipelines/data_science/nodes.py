@@ -26,24 +26,22 @@ def split_data(data: pd.DataFrame, parameters: Dict) -> Tuple[pd.DataFrame, pd.D
 def train_model(train_data: pd.DataFrame, parameters: Dict):
     """Vectorizes text and trains the Random Forest model."""
     
-    # 1. Feature Engineering: Convert text to numbers (TF-IDF)
     vectorizer = TfidfVectorizer(max_features=parameters["tfidf_max_features"])
     X_train_vec = vectorizer.fit_transform(train_data["cleaned_sentence"])
     y_train = train_data["sentiment_label"]
     
-    # 2. Train the Model
     logger = logging.getLogger(__name__)
     logger.info("Training Random Forest Sentiment Model...")
     
-    classifier = RandomForestClassifier(random_state=parameters["random_state"])
+    # Use the parameters here!
+    classifier = RandomForestClassifier(
+        n_estimators=parameters["n_estimators"],
+        max_depth=parameters["max_depth"],
+        random_state=parameters["random_state"]
+    )
     classifier.fit(X_train_vec, y_train)
     
-    # We package the vectorizer AND the classifier together so we can predict on new text later
-    pipeline_model = {
-        "vectorizer": vectorizer,
-        "classifier": classifier
-    }
-    
+    pipeline_model = {"vectorizer": vectorizer, "classifier": classifier}
     return pipeline_model
 
 def evaluate_model(pipeline_model: dict, test_data: pd.DataFrame) -> Dict[str, float]:
