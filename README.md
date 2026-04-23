@@ -1,100 +1,46 @@
-# Investment_Intelligence_Pipeline
+# 📈 Investment Intelligence: Financial Sentiment Pipeline
 
-[![Powered by Kedro](https://img.shields.io/badge/powered_by-kedro-ffc900?logo=kedro)](https://kedro.org)
+A production-grade, modular Machine Learning pipeline built with **Kedro** to classify the sentiment of financial news and corporate disclosures. 
 
-## Overview
+Unlike experimental Jupyter Notebooks, this project demonstrates enterprise software engineering practices for Data Science, including **configuration-driven execution**, **data cataloging**, and **DAG-based pipeline orchestration**.
 
-This is your new Kedro project with PySpark setup, which was generated using `kedro 1.3.1`.
+## 🎯 Executive Summary
+Financial sentiment analysis requires domain-specific understanding (e.g., "cost cutting" is often positive for shareholders but negative for employees). This pipeline uses the **Financial PhraseBank** dataset to train a predictive model.
 
-Take a look at the [Kedro documentation](https://docs.kedro.org) to get started.
+* **Baseline Model:** TF-IDF Vectorizer + Random Forest Classifier
+* **Baseline Accuracy:** ~72% (Three-class: Positive, Negative, Neutral)
+* **Framework:** Kedro (QuantumBlack / McKinsey & Company)
 
-## Rules and guidelines
+## 🏗️ Pipeline Architecture
 
-In order to get the best out of the template:
+The project is structured as a Directed Acyclic Graph (DAG) consisting of two distinct pipelines:
 
-* Don't remove any lines from the `.gitignore` file we provide
-* Make sure your results can be reproduced by following a [data engineering convention](https://docs.kedro.org/en/stable/faq/faq.html#what-is-data-engineering-convention)
-* Don't commit data to your repository
-* Don't commit any credentials or your local configuration to your repository. Keep all your credentials and local configuration in `conf/local/`
+### 1. Data Processing Pipeline (`data_processing`)
+Responsible for data engineering and standardization.
+* **Ingestion:** Automatically fetches the Parquet-formatted Financial PhraseBank dataset from the Hugging Face hub via a custom ingestion script.
+* **Standardization:** Cleans text (lowercasing, punctuation removal) and handles missing values.
+* **Optimization:** Converts the raw CSV into a highly compressed `.parquet` format for fast downstream read/write operations.
 
-## How to install dependencies
+### 2. Data Science Pipeline (`data_science`)
+Responsible for feature engineering, model training, and evaluation.
+* **Dynamic Splitting:** Train/Test splits are controlled via `parameters.yml` (no hardcoded variables).
+* **Training:** Vectorizes text and trains the Random Forest algorithm.
+* **Evaluation:** Outputs a classification report and saves performance metrics to `data/08_reporting/metrics.json`.
+* **Artifacts:** Serializes and exports the trained model pipeline as a `.pkl` file.
 
-Declare any dependencies in `requirements.txt` for `pip` installation.
+## 🛠️ Tech Stack
+* **Orchestration:** Kedro
+* **Data Processing:** Pandas, PyArrow
+* **Machine Learning:** Scikit-Learn
+* **Data Sourcing:** Hugging Face `datasets`
 
-To install them, run:
+## 🚀 How to Run
 
-```
-pip install -r requirements.txt
-```
-
-## How to run your Kedro pipeline
-
-You can run your Kedro project with:
-
-```
-kedro run
-```
-
-## How to test your Kedro project
-
-Have a look at the files `tests/test_run.py` and `tests/pipelines/data_science/test_pipeline.py` for instructions on how to write your tests. Run the tests as follows:
-
-```
-pytest
-```
-
-You can configure the coverage threshold in your project's `pyproject.toml` file under the `[tool.coverage.report]` section.
-
-## Project dependencies
-
-To see and update the dependency requirements for your project use `requirements.txt`. Install the project requirements with `pip install -r requirements.txt`.
-
-[Further information about project dependencies](https://docs.kedro.org/en/stable/kedro_project_setup/dependencies.html#project-specific-dependencies)
-
-## How to work with Kedro and notebooks
-
-> Note: Using `kedro jupyter` or `kedro ipython` to run your notebook provides these variables in scope: `catalog`, `context`, `pipelines` and `session`.
->
-> Jupyter, JupyterLab, and IPython are already included in the project requirements by default, so once you have run `pip install -r requirements.txt` you will not need to take any extra steps before you use them.
-
-### Jupyter
-To use Jupyter notebooks in your Kedro project, you need to install Jupyter:
-
-```
-pip install jupyter
-```
-
-After installing Jupyter, you can start a local notebook server:
-
-```
-kedro jupyter notebook
-```
-
-### JupyterLab
-To use JupyterLab, you need to install it:
-
-```
-pip install jupyterlab
-```
-
-You can also start JupyterLab:
-
-```
-kedro jupyter lab
-```
-
-### IPython
-And if you want to run an IPython session:
-
-```
-kedro ipython
-```
-
-### How to ignore notebook output cells in `git`
-To automatically strip out all output cell contents before committing to `git`, you can use tools like [`nbstripout`](https://github.com/kynan/nbstripout). For example, you can add a hook in `.git/config` with `nbstripout --install`. This will run `nbstripout` before anything is committed to `git`.
-
-> *Note:* Your output cells will be retained locally.
-
-## Package your Kedro project
-
-[Further information about building project documentation and packaging your project](https://docs.kedro.org/en/stable/tutorial/package_a_project.html)
+**1. Clone the repository and install dependencies:**
+```bash
+git clone [https://github.com/04-snigdha/investment-intelligence-pipeline.git](https://github.com/04-snigdha/investment-intelligence-pipeline.git)
+cd investment-intelligence-pipeline
+python -m venv venv
+source venv/Scripts/activate  # On Windows: .\venv\Scripts\Activate
+pip install -r src/requirements.txt
+pip install kedro-datasets pyarrow datasets
